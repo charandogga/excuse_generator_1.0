@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Excuse Generator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding:2rem 1rem}
+h1{font-size:24px;font-weight:600;color:#f1f5f9;margin-bottom:4px}
+.subtitle{font-size:14px;color:#94a3b8;margin-bottom:2rem}
+.layout{display:grid;grid-template-columns:280px 1fr;gap:1.5rem;max-width:1000px;margin:0 auto}
+.panel{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:1.25rem}
+.panel-title{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem}
+.form-group{margin-bottom:1rem}
+.form-group label{display:block;font-size:13px;color:#94a3b8;margin-bottom:6px}
+.form-group select{width:100%;padding:9px 10px;border:1px solid #334155;border-radius:8px;background:#0f172a;color:#e2e8f0;font-size:14px;outline:none;cursor:pointer}
+.form-group select:focus{border-color:#3b82f6}
+.btn{width:100%;padding:11px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid #334155;margin-bottom:8px;transition:all .15s;color:#e2e8f0;background:#1e293b}
+.btn:hover{background:#334155}
+.btn.primary{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.btn.primary:hover{background:#2563eb}
+.tabs{display:flex;gap:2px;margin-bottom:1.25rem;background:#0f172a;border-radius:8px;padding:4px}
+.tab{flex:1;padding:8px;font-size:13px;cursor:pointer;border-radius:6px;border:none;background:none;color:#64748b;transition:all .15s;font-weight:500}
+.tab.active{background:#1e293b;color:#e2e8f0}
+.excuse-card{background:#0f172a;border-radius:10px;padding:1.25rem;margin-bottom:1rem}
+.excuse-text{font-size:15px;color:#f1f5f9;line-height:1.65;margin-bottom:1rem;font-style:italic}
+.meta-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.badge{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.badge-blue{background:#1e3a5f;color:#60a5fa}
+.badge-green{background:#14532d;color:#4ade80}
+.badge-amber{background:#451a03;color:#fbbf24}
+.badge-red{background:#450a0a;color:#f87171}
+.badge-gray{background:#1e293b;color:#94a3b8}
+.score-bar{height:4px;border-radius:2px;background:#334155;overflow:hidden}
+.score-fill{height:100%;border-radius:2px;transition:width .5s ease}
+.doc{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:1.25rem;font-family:'Courier New',monospace;font-size:12px;line-height:1.7;white-space:pre-wrap;color:#cbd5e1;margin-bottom:.5rem;position:relative}
+.doc-label{font-size:11px;font-weight:600;color:#64748b;background:#1e293b;border:1px solid #334155;border-radius:6px;padding:3px 8px;position:absolute;top:10px;right:10px}
+.copy-btn{font-size:12px;color:#94a3b8;background:#1e293b;border:1px solid #334155;border-radius:6px;padding:5px 10px;cursor:pointer;margin-bottom:1.25rem;transition:all .15s}
+.copy-btn:hover{background:#334155;color:#e2e8f0}
+.apology-box{background:#0f172a;border-radius:8px;padding:1.25rem;font-size:14px;line-height:1.7;color:#e2e8f0;border-left:3px solid #3b82f6;margin-bottom:.75rem}
+.history-item{padding:10px 0;border-bottom:1px solid #1e293b;display:flex;gap:10px}
+.history-item:last-child{border-bottom:none}
+.history-num{font-size:11px;color:#475569;min-width:18px;margin-top:2px}
+.history-text{font-size:13px;color:#cbd5e1;line-height:1.5}
+.history-meta{font-size:11px;color:#475569;margin-top:3px}
+.empty{text-align:center;padding:3rem 1rem;color:#475569;font-size:14px}
+.empty-icon{font-size:32px;margin-bottom:8px}
+.pane{display:none}
+.pane.active{display:block}
+.header{max-width:1000px;margin:0 auto 1.5rem}
+@media(max-width:700px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🛡️ AI Excuse Generator</h1>
+  <p class="subtitle">Generate contextual excuses with supporting proof documents</p>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="panel">
+      <div class="panel-title">Configure</div>
+      <div class="form-group">
+        <label>Situation</label>
+        <select id="cat">
+          <option value="work">Work / Office</option>
+          <option value="school">School / College</option>
+          <option value="social">Social event</option>
+          <option value="family">Family obligation</option>
+          <option value="emergency">Emergency</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Excuse type</label>
+        <select id="subcat">
+          <option value="medical">Medical / Health</option>
+          <option value="family">Family issue</option>
+          <option value="transport">Transport / Vehicle</option>
+          <option value="home">Home emergency</option>
+          <option value="technical">Technical problem</option>
+          <option value="personal">Personal matter</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Urgency</label>
+        <select id="urgency">
+          <option value="low">Low — flexible timing</option>
+          <option value="medium" selected>Medium — same day</option>
+          <option value="high">High — immediate</option>
+          <option value="critical">Critical — emergency</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Apology tone</label>
+        <select id="apology_type">
+          <option value="professional">Professional</option>
+          <option value="casual">Casual / Friendly</option>
+          <option value="formal">Formal / Written</option>
+          <option value="empathetic">Empathetic</option>
+        </select>
+      </div>
+      <button class="btn primary" onclick="generateAll()">⚡ Generate excuse + proof</button>
+      <button class="btn" onclick="showTab('history')">📋 View history</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('excuse')" id="tab-excuse">Excuse</button>
+      <button class="tab" onclick="showTab('apology')" id="tab-apology">Apology</button>
+      <button class="tab" onclick="showTab('proof')" id="tab-proof">Proof docs</button>
+      <button class="tab" onclick="showTab('history')" id="tab-history">History</button>
+    </div>
+    <div id="pane-excuse" class="pane active"><div class="empty"><div class="empty-icon">👆</div>Configure and click generate</div></div>
+    <div id="pane-apology" class="pane"><div class="empty">Generate an excuse first</div></div>
+    <div id="pane-proof" class="pane"><div class="empty">Generate an excuse first</div></div>
+    <div id="pane-history" class="pane"><div class="empty">No history yet</div></div>
+  </div>
+</div>
+
+<script>
+const history=[];
+let current=null;
+
+const excuseData={
+  work:{
+    medical:["I'm experiencing a severe migraine with vision disturbances and my doctor has advised me to rest immediately.","I woke up with acute food poisoning symptoms and am unable to travel safely.","I've developed a severe allergic reaction and am currently under medical observation.","I'm experiencing debilitating back spasms that make it impossible to sit or travel today."],
+    family:["My elderly parent has been rushed to hospital and I need to be present with them.","I have a family medical emergency that requires my immediate attention today.","My child has been sent home from school with a high fever and cannot be left alone.","A close family member has had an accident and I need to assist at the hospital."],
+    transport:["My car won't start this morning and roadside assistance has a 3-hour wait.","There has been a major accident on my route and all traffic is completely blocked.","My train has been cancelled due to a signalling fault with no alternative service for 2 hours.","My vehicle was involved in a minor collision this morning and the police are currently on scene."],
+    home:["There is an active water leak in my home and I'm waiting for emergency plumbers to arrive.","My home security alarm was triggered overnight and I need to wait for police to clear the property.","There is a suspected gas smell in my property and I'm waiting for the gas company emergency team.","A pipe has burst and I'm dealing with significant water damage — I cannot leave the property unattended."],
+    technical:["I'm having a complete internet outage and cannot access any work systems remotely.","My laptop has failed catastrophically overnight and all my work files are inaccessible.","There is a power cut in my area affecting my ability to work from home today.","My VPN and company authentication systems have locked me out — IT support is currently working on it."],
+    personal:["I have an urgent personal matter that requires my full attention today.","I'm dealing with a time-sensitive legal matter that cannot be rescheduled.","I have an appointment that was unexpectedly moved to today that I absolutely cannot miss.","I have a private medical procedure scheduled for this morning that I cannot postpone."]
+  },
+  school:{
+    medical:["I'm unwell with a high fever and my parents have advised me to stay home and rest today.","I'm experiencing severe nausea and vomiting and am unable to travel to school safely.","I have a scheduled medical appointment that could not be moved outside school hours.","I'm recovering from a bout of illness and my doctor has advised an additional day's rest."],
+    family:["I have a family emergency that requires my presence — I'll catch up on all missed work promptly.","My sibling is unwell and I need to help care for them while my parents are at work.","I need to accompany a family member to an important medical appointment today.","There is a family situation that requires my attention and I will be absent today."],
+    transport:["My bus route is not operating today due to industrial action by drivers.","My parents' car has broken down and there is no alternative transport currently available.","Road closures near my home have made travel to school completely impossible today.","Train services on my line are severely disrupted with no expected resolution time given."],
+    technical:["My laptop which holds my coursework has suffered a critical hardware failure overnight.","I cannot access the online exam portal — the system is showing a persistent authentication error.","There has been a power outage affecting my area, preventing me from completing my online coursework.","My internet connection has completely failed and I cannot submit coursework or attend online classes."],
+    personal:["I have a private medical appointment today that was not available at any other time.","I'm attending a university open day that is directly relevant to my future academic career.","I have a time-sensitive personal commitment that I genuinely cannot postpone.","I need to deal with a personal matter of some urgency that cannot wait until the weekend."],
+    home:["There is a home emergency that requires a family member to remain at home with me today.","Our property has experienced a significant issue and an adult is required to stay on-site.","A situation at home requires my presence — I will ensure I do not fall behind on schoolwork.","There has been an unexpected domestic emergency that is preventing me from attending today."]
+  },
+  social:{
+    medical:["I'm really not well today — I've been sick since last night and wouldn't want to pass it on to anyone.","I've come down with a bad stomach bug and it really wouldn't be appropriate for me to come out.","I've been dealing with a migraine all day and genuinely need to rest this evening.","I woke up feeling really unwell and I'm honestly not in any state to socialise tonight."],
+    family:["Something has come up with my family tonight that I genuinely can't get out of — really sorry.","A family member needs me this evening unexpectedly so I won't be able to make it.","I've got a family thing that I completely forgot about — really bad timing, I know!","My parents need me for something important tonight — I hope you all have a brilliant time."],
+    transport:["My car has broken down on my way there — I'm so sorry, I'm stuck waiting for a tow truck.","All the trains are cancelled on my line tonight and I genuinely can't find another way.","My cab has cancelled twice and there are simply no other options at this time of night.","I've had a minor car incident and I'm dealing with the aftermath right now — can't make it tonight."],
+    home:["I've had an unexpected home emergency that I need to sort out tonight — really sorry!","Something has gone wrong at home and I need to be here to deal with it — so sorry!","I'm waiting for an emergency plumber and they can't give me any kind of time window.","My boiler has packed in and it's absolutely freezing — waiting for someone to come fix it."],
+    personal:["I'm really not in the right headspace tonight — I hope you understand, I'll make it up to you.","Something personal has come up that I need to deal with — I'll explain properly another time.","I've completely overcommitted this week and I'm exhausted — I really need to call it tonight.","I'm dealing with something quite stressful at the moment and I don't think I'd be good company."],
+    technical:["My laptop just died on me with a work deadline tonight — I have to stay home and sort it out.","I've had a major work crisis land in my lap this evening — it's completely out of my hands.","Something urgent has come up with work that I need to handle remotely tonight — so annoying.","I'm stuck dealing with a work emergency that came out of nowhere — I'll make it up to you!"]
+  },
+  family:{
+    medical:["I'm not well enough to travel today — I've been under the weather since last night unfortunately.","I have a medical appointment I couldn't reschedule — it's been booked for quite a while.","I've come down with something and I really don't want to risk passing it on to everyone.","My doctor has asked me to come in for a follow-up appointment that I simply can't postpone."],
+    family:["I've already got a commitment on that day that was arranged quite a while beforehand.","I'm going to be out of town that weekend — I didn't realise it clashed until just now.","Something has come up that I need to be here for — really sorry about the short notice.","I have a prior arrangement that I genuinely cannot get out of — really bad timing."],
+    transport:["My car is in for repairs and I won't have it back in time unfortunately.","The trains aren't running that day due to planned engineering works on my line.","I don't have a way to get there currently — my car situation is a bit complicated right now.","My car has been having some issues and I'm not confident it would make the full journey."],
+    home:["I have a delivery arriving that requires a signature — they couldn't give me a specific slot.","I'm having some work done on the house that I really need to be present for.","I have a contractor coming in the morning that I've already had to rearrange once before.","I'm waiting on an important repair that I've genuinely had to rearrange twice already."],
+    personal:["I have something personal going on at the moment that I'd rather not go into right now.","Things are a bit hectic right now — I'll explain properly when I see you next.","I'm just finding it all a bit much at the moment and need a bit of space — hope you understand.","I'm not in a great place right now — I really hope everyone understands."],
+    technical:["My internet has been down all week and I missed all the planning messages unfortunately.","I've had a nightmare week with work tech issues and I'm completely snowed under.","I had a laptop fail and I've honestly lost track of a lot of commitments this week.","I've been locked out of my emails for days — just catching up on everything now."]
+  },
+  emergency:{
+    medical:["I'm in A&E right now — a family member collapsed suddenly and I absolutely cannot leave.","I'm experiencing a severe allergic reaction and have been taken to hospital by ambulance.","I'm with a family member who has just been admitted to hospital — it's quite serious.","I've had a medical incident and I'm currently receiving emergency care at the hospital."],
+    family:["There has been a serious accident involving a family member — I'm currently at the hospital.","I'm dealing with a family emergency that I cannot say more about right now.","A close family member is in critical care and I need to be with them right now.","I've had a family bereavement today and I simply won't be coming in."],
+    transport:["I've been involved in a road traffic accident — I'm unhurt but it's now a police matter.","My vehicle has been stolen overnight and I'm currently dealing with the police report.","I've been involved in a minor collision this morning and I'm waiting for the authorities.","I'm stranded following an incident on the motorway — emergency services are currently present."],
+    home:["There is a fire alarm activation at my property and I cannot leave until it has been cleared.","I've returned home to find signs of a break-in and the police are currently at the scene.","My property has flooded overnight and I'm dealing with emergency services on site right now.","There is a gas emergency at my address — part of the street has been evacuated as a precaution."],
+    personal:["I'm dealing with an extremely serious personal matter that I cannot discuss right now.","Something has happened today that means I am simply not in a position to come in.","I have a genuine crisis that means I will not be reachable for the remainder of today.","I am dealing with a matter of extreme urgency — I will update you as soon as I possibly can."],
+    technical:["A critical systems failure has occurred that requires my immediate personal attention.","I'm dealing with a major data security incident and cannot step away under any circumstances.","An emergency has arisen with our systems that I am the only person able to resolve right now.","I'm managing an active cybersecurity incident that requires my full and undivided attention."]
+  }
+};
+
+const proofTemplates={
+  medical:{
+    label:"Medical Certificate",
+    gen:(d,r)=>`MEDICAL CERTIFICATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Dr. A. Patel, MBBS, MRCGP
+The Riverside Medical Practice
+14 Riverside Walk, London EC4R 2BX
+Tel: 020 7946 0912  |  Fax: 020 7946 0913
+GMC Registration No: 7243819
+
+Date: ${d}
+Reference: MC-${r}
+
+CERTIFICATE OF ILLNESS
+
+Patient Name: [Your Full Name]
+Date of Birth: [Your DOB]
+
+This is to certify that the above-named patient attended this 
+practice today and was found to be suffering from an acute 
+illness rendering them unfit for their normal duties.
+
+Diagnosis: Acute viral illness with associated fatigue
+Recommended rest period: 1–2 days
+Date assessed: ${d}
+
+The patient has been advised to rest and avoid strenuous 
+activity. They are expected to return to normal duties 
+thereafter, subject to review if symptoms persist.
+
+Signed: _____________________________
+Dr. A. Patel  |  The Riverside Medical Practice
+Date: ${d}`
+  },
+  hospital:{
+    label:"NHS Hospital Letter",
+    gen:(d,r)=>`NHS TRUST — PATIENT SERVICES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+St. Mary's University Hospital
+Praed Street, London W2 1NY
+Tel: 020 3312 6666
+Patient Reference: ${r}
+
+Date: ${d}
+
+TO WHOM IT MAY CONCERN
+
+Dear Sir/Madam,
+
+This letter is to confirm that the above-named patient (or 
+their immediate family member) attended St. Mary's University 
+Hospital on ${d} as an emergency admission.
+
+Admission type: Unplanned emergency attendance
+Department: Emergency Department / Acute Medical Unit
+Duration: Ongoing / same-day attendance
+
+Due to patient confidentiality we are unable to disclose 
+further clinical details. This letter serves as confirmation 
+of attendance only and should be accepted as such.
+
+If you require further information please contact our 
+Patient Services team quoting the reference above.
+
+Yours faithfully,
+
+_____________________________
+Patient Services Department
+St. Mary's University Hospital
+Reference: ${r}  |  Date: ${d}`
+  },
+  gp_email:{
+    label:"Email from GP Surgery",
+    gen:(d,r)=>`From: reception@riversidemedical.nhs.uk
+To: [Your Email Address]
+Date: ${d}, ${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')}
+Subject: Your appointment — follow-up note
+
+Dear [Your Name],
+
+Thank you for attending The Riverside Medical Practice today.
+
+As discussed during your consultation, Dr. Patel has recommended 
+that you take a period of rest and avoid your normal duties 
+for the next 1–2 days.
+
+A formal medical certificate has been issued and is enclosed 
+for your records (ref: MC-${r}).
+
+Please do not hesitate to contact the surgery if your symptoms 
+worsen or if you require any further documentation.
+
+Kind regards,
+
+Reception Team
+The Riverside Medical Practice
+Tel: 020 7946 0912
+www.riversidemedical.nhs.uk
+
+─────────────────────────────────────────────────────
+CONFIDENTIALITY NOTICE: This email and any attachments 
+are confidential and intended solely for the named recipient.`
+  },
+  traffic:{
+    label:"Traffic Incident Report",
+    gen:(d,r)=>`TRANSPORT AUTHORITY — INCIDENT NOTIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+National Highways / Transport Authority
+Incident Control Centre
+
+Report Number: TI-${r}
+Date of Incident: ${d}
+Reported at: ${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')} hrs
+
+INCIDENT SUMMARY
+
+Type: Road traffic collision / severe route disruption
+Location: Major arterial route (specific details on file)
+Lanes / Routes affected: Primary route closed, both directions
+Expected clearance time: 2–4 hours from time of report
+
+Impact Assessment:
+• Estimated delay for affected motorists: 90–180 minutes
+• Diversion routes: All alternatives showing heavy congestion
+• Public transport: Associated delays on nearby services
+
+This document confirms a significant transport disruption on 
+the date shown above that may have caused delays or prevented 
+travel for individuals in the affected area.
+
+Issued by: Incident Management Team
+Reference: TI-${r}  |  Date: ${d}`
+  },
+  breakdown:{
+    label:"Vehicle Breakdown Confirmation",
+    gen:(d,r)=>`ROADSIDE ASSISTANCE — BREAKDOWN CONFIRMATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+National Breakdown Recovery Service
+Member Services Department
+
+Job Reference: BR-${r}
+Date: ${d}
+Time of Call: ${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')} hrs
+
+BREAKDOWN ATTENDANCE RECORD
+
+Member Name: [Your Full Name]
+Membership Number: [Your Membership Number]
+Vehicle Registration: [Your Registration]
+Vehicle Make / Model: [Your Vehicle]
+Location of Breakdown: [Your Location / Nearest Postcode]
+
+Reported Fault: Vehicle failed to start — suspected 
+electrical / battery fault
+Attendance ETA: Approx. ${Math.floor(Math.random()*40)+40} minutes from call
+Resolution: Vehicle assessed on-site — recovery to nearest 
+authorised garage arranged and completed
+
+This document confirms a genuine vehicle breakdown attendance 
+on the above date and time. The member's vehicle was unable 
+to be driven and required professional recovery services.
+
+Authorised by: Member Services Department
+Reference: BR-${r}  |  Date: ${d}`
+  },
+  contractor:{
+    label:"Emergency Contractor Report",
+    gen:(d,r)=>`EMERGENCY MAINTENANCE — JOB COMPLETION REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+HomeShield Emergency Services Ltd.
+Gas Safe Registered: 123456  |  NICEIC Approved
+
+Job Reference: JR-${r}
+Date of Attendance: ${d}
+Attending Engineer: [Engineer Name]
+
+EMERGENCY VISIT RECORD
+
+Property Address: [Your Full Address]
+Reported Issue: Emergency domestic call-out
+
+Nature of Work Carried Out:
+• Initial on-site assessment of reported fault
+• Isolation of affected systems where applicable
+• Temporary repair / make-safe procedure completed
+• Follow-up visit to be scheduled if required
+
+The engineer confirmed that the property occupant was required 
+to remain on-site throughout the full duration of attendance 
+for access, safety compliance, and sign-off.
+
+Arrival time: ${new Date().getHours()-2 < 0 ? '08' : new Date().getHours()-2}:${String(new Date().getMinutes()).padStart(2,'0')}
+Departure time: ${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2,'0')}
+
+Signed: _____________________________
+HomeShield Emergency Services Ltd.
+Reference: JR-${r}  |  Date: ${d}`
+  },
+  police:{
+    label:"Police Incident Reference",
+    gen:(d,r)=>`POLICE SERVICE — INCIDENT REFERENCE CONFIRMATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Metropolitan Police Service
+Information Management Unit
+
+Crime / Incident Reference: MPS-${r.toUpperCase()}
+Date of Report: ${d}
+Reporting Method: In person / by telephone
+
+INCIDENT ACKNOWLEDGEMENT
+
+This confirms that an incident was reported to the 
+Metropolitan Police Service on the date shown above.
+
+Incident type: [Classified — available upon formal request]
+Recorded: Yes
+Investigation status: Under review
+
+The individual named below was involved in reporting or 
+attending in connection with this incident on the stated date.
+
+Name: [Your Full Name]
+Address: [Your Address]
+
+This document serves as official confirmation of contact 
+with police services on the stated date. For further 
+information contact: 101 (non-emergency) quoting:
+MPS-${r.toUpperCase()}
+
+Issued by: Information Management Unit
+Date: ${d}`
+  },
+  hr_memo:{
+    label:"HR Absence Memo",
+    gen:(d,r)=>`INTERNAL MEMORANDUM — HR DEPARTMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CONFIDENTIAL
+
+To: Line Manager / Relevant Parties
+From: HR Department
+Date: ${d}
+Subject: Absence Notification — Ref ${r}
+
+This memo confirms that [Employee / Student Name] has 
+formally notified HR of their absence on ${d}.
+
+The reason provided falls within an accepted category 
+per the standard absence management policy. Supporting 
+documentation has been requested and is expected within 
+5 working days of return.
+
+Absence category: Authorised / Pending verification
+Return to work interview: To be scheduled upon return
+Cover arrangements: To be made per standard procedure
+
+This memo is for internal record-keeping purposes only.
+
+HR Department
+Reference: ${r}  |  Date: ${d}
+[Organisation Name] — Strictly Confidential`
+  }
+};
+
+const proofByType={
+  medical:['medical','gp_email','hospital'],
+  family:['hospital','gp_email'],
+  transport:['traffic','breakdown'],
+  home:['contractor','police'],
+  technical:['hr_memo'],
+  personal:['medical','hr_memo'],
+  emergency:['hospital','police','medical']
+};
+
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function ref(){return String(Math.floor(Math.random()*900000)+100000)}
+function today(){return new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})}
+
+function believability(cat,sub,urg){
+  let s=0.65;
+  if(cat==='work'||cat==='emergency')s+=0.1;
+  if(sub==='medical')s+=0.15;
+  else if(sub==='family')s+=0.1;
+  if(urg==='high'||urg==='critical')s+=0.1;
+  const overuse=history.filter(e=>e.sub===sub).length;
+  if(overuse>2)s-=0.15;
+  return Math.min(Math.max(s,0.1),1.0);
+}
+
+function scoreInfo(s){
+  if(s>=0.85)return{color:'#4ade80',cls:'badge-green',label:'Very convincing'};
+  if(s>=0.70)return{color:'#60a5fa',cls:'badge-blue',label:'Convincing'};
+  if(s>=0.55)return{color:'#fbbf24',cls:'badge-amber',label:'Plausible'};
+  return{color:'#f87171',cls:'badge-red',label:'Risky'};
+}
+
+function buildApology(text,type){
+  const m={
+    professional:[
+      `I sincerely apologise for the short notice. ${text} I will ensure all outstanding matters are handled as a priority upon my return.`,
+      `Please accept my sincere apologies for any inconvenience. ${text} I will make sure nothing is left unattended during my absence.`
+    ],
+    casual:[
+      `Hey, really sorry about this! ${text} I'll absolutely make it up to you.`,
+      `So sorry for the last-minute notice — ${text} Hope you understand!`
+    ],
+    formal:[
+      `Dear [Name],\n\nI write to formally notify you of my inability to attend today. ${text}\n\nI apologise sincerely for any inconvenience caused and will ensure a smooth handover of all pending matters.\n\nYours sincerely,\n[Your Name]`
+    ],
+    empathetic:[
+      `I completely understand how inconvenient this is and I'm truly sorry for the impact on everyone. ${text} I genuinely wouldn't do this unless I had absolutely no other option.`,
+      `I feel awful about this and I know the timing couldn't be worse. ${text} Thank you so much for your understanding — it really does mean a lot.`
+    ]
+  };
+  return pick(m[type]||m.professional);
+}
+
+function generateAll(){
+  const cat=document.getElementById('cat').value;
+  const sub=document.getElementById('subcat').value;
+  const urg=document.getElementById('urgency').value;
+  const apt=document.getElementById('apology_type').value;
+  const pool=(excuseData[cat]&&excuseData[cat][sub]&&excuseData[cat][sub].length)?excuseData[cat][sub]:excuseData[cat][Object.keys(excuseData[cat])[0]];
+  const text=pick(pool);
+  const s=believability(cat,sub,urg);
+  const si=scoreInfo(s);
+  const r=ref();
+  const d=today();
+  const keys=proofByType[sub]||proofByType.personal;
+  const docs=keys.map(k=>({label:proofTemplates[k].label,content:proofTemplates[k].gen(d,r)}));
+  current={text,cat,sub,urg,s,si,r,d,docs,apology:buildApology(text,apt),apt};
+  history.unshift({text,cat,sub,urg,s,d});
+  if(history.length>50)history.pop();
+  renderExcuse();renderApology();renderProof();renderHistory();
+  showTab('excuse');
+}
+
+function renderExcuse(){
+  if(!current)return;
+  document.getElementById('pane-excuse').innerHTML=`
+<div class="excuse-card">
+  <div class="excuse-text">"${current.text}"</div>
+  <div class="meta-row">
+    <span class="badge badge-blue">${current.cat}</span>
+    <span class="badge badge-blue">${current.sub}</span>
+    <span class="badge ${current.si.cls}">${current.si.label} — ${Math.round(current.s*100)}%</span>
+    <span class="badge badge-gray">${current.urg} urgency</span>
+  </div>
+  <div class="score-bar"><div class="score-fill" style="width:${Math.round(current.s*100)}%;background:${current.si.color}"></div></div>
+</div>
+<p style="font-size:13px;color:#64748b;margin-top:4px">📄 ${current.docs.length} proof document${current.docs.length!==1?'s':''} generated — see <strong>Proof docs</strong> tab</p>`;
+}
+
+function renderApology(){
+  if(!current)return;
+  document.getElementById('pane-apology').innerHTML=`
+<p style="font-size:12px;color:#64748b;margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.06em">${current.apt} tone</p>
+<div class="apology-box">${current.apology.replace(/\n/g,'<br>')}</div>
+<button class="copy-btn" onclick="copyText(this,${JSON.stringify(current.apology)})">📋 Copy message</button>`;
+}
+
+function renderProof(){
+  if(!current)return;
+  if(!current.docs.length){document.getElementById('pane-proof').innerHTML='<div class="empty">No proof documents for this type.</div>';return;}
+  document.getElementById('pane-proof').innerHTML=current.docs.map(d=>`
+<div class="doc"><div class="doc-label">${d.label}</div>${d.content}</div>
+<button class="copy-btn" onclick="copyText(this,${JSON.stringify(d.content)})">📋 Copy document</button>
+<div style="height:1rem"></div>`).join('');
+}
+
+function renderHistory(){
+  if(!history.length){document.getElementById('pane-history').innerHTML='<div class="empty">No history yet</div>';return;}
+  document.getElementById('pane-history').innerHTML=history.slice(0,20).map((e,i)=>{
+    const si=scoreInfo(e.s);
+    return `<div class="history-item"><div class="history-num">${i+1}</div><div><div class="history-text">${e.text}</div><div class="history-meta">${e.cat} · ${e.sub} · <span class="badge ${si.cls}" style="font-size:10px;padding:1px 6px">${si.label}</span> · ${e.d}</div></div></div>`;
+  }).join('');
+}
+
+function showTab(name){
+  ['excuse','apology','proof','history'].forEach(t=>{
+    document.getElementById('pane-'+t).classList.toggle('active',t===name);
+    const btn=document.getElementById('tab-'+t);
+    if(btn)btn.classList.toggle('active',t===name);
+  });
+}
+
+function copyText(btn,text){
+  navigator.clipboard.writeText(text).then(()=>{
+    const o=btn.innerHTML;
+    btn.innerHTML='✅ Copied!';
+    setTimeout(()=>{btn.innerHTML=o},1800);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const o=btn.innerHTML;
+    btn.innerHTML='✅ Copied!';
+    setTimeout(()=>{btn.innerHTML=o},1800);
+  });
+}
+</script>
+</body>
+</html>
