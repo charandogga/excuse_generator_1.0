@@ -19,7 +19,7 @@ An interactive web app built using HTML, CSS, and JavaScript that generates cont
 
 ## Live Demo
 
-https://charandogga.github.io/ai-excuse-generator/
+https://charandogga.github.io/excuse_generator_1.0/
 
 ## 👨‍💻 Author
 
